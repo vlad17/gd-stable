@@ -15,6 +15,8 @@ input-output pairs according to the network's current weights.
 
 Then a new network is trained with 100 full gradient descent steps.
 
+Prints a loss curve in ./data/plot-5-32.pdf
+
 """
 
 from absl import app
@@ -25,7 +27,7 @@ from torch.nn import functional as F
 import numpy as np
 
 from gd_stable.mlp import MLP
-from gd_stable.utils import seed_all, timeit
+from gd_stable.utils import seed_all, timeit, import_matplotlib
 
 flags.DEFINE_integer('depth', 5, 'depth of generated network')
 flags.DEFINE_integer('width', 32, 'width of generated network')
@@ -80,6 +82,7 @@ def _main(_):
     evaluate_every = max(flags.FLAGS.steps // 100, 1)
     maxsteps = flags.FLAGS.steps
     maxnorm = 1  # np.sqrt(num_parameters)
+    losses = []
     for step in range(1, 1 + maxsteps):
         optimizer.zero_grad()
 
@@ -97,6 +100,7 @@ def _main(_):
             batch_loss.backward(torch.ones(()).to(device) * scaling_factor)
             with torch.no_grad():
                 loss += batch_loss.cpu().detach().numpy() * scaling_factor
+        losses.append(loss)
 
         with torch.no_grad():
             grad = torch.cat(
@@ -118,6 +122,17 @@ def _main(_):
             update += ' grad norm {:8.4g}'.format(gradnorm)
             # todo generalization error from batch sample
             print(update)
+
+    plt = import_matplotlib()
+    steps = np.arange(1, 1 + maxsteps, 1.)
+    plt.clf()
+    plt.plot(steps, losses)
+    plt.xlabel('iterations')
+    plt.ylabel('loss')
+    plt.title('gd with norm clipping (depth {} width {})'.format(
+        flags.FLAGS.depth, flags.FLAGS.width))
+    plt.savefig('./data/plot-{}-{}.pdf'.format(flags.FLAGS.depth,
+                                               flags.FLAGS.width))
 
 
 if __name__ == '__main__':

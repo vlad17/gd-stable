@@ -40,6 +40,9 @@ main() {
     cmds+=("rm -rf ./data/mlp-1-113.pth")
     cmds+=("python gd_stable/main/generate_network.py --depth 1 --width 113")
     cmds+=("test -f ./data/mlp-1-113.pth")
+    cmds+=("rm -rf ./data/plot-1-113.pdf")
+    cmds+=("python gd_stable/main/train.py --depth 1 --width 113 --samples 1000")
+    cmds+=("test -f ./data/plot-1-113.pdf")
 
     for cmd in "${cmds[@]}"; do
         box "${cmd}"
