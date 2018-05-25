@@ -32,6 +32,8 @@ from gd_stable.utils import seed_all, timeit, import_matplotlib, num_parameters,
 flags.DEFINE_integer('depth', 5, 'depth of generated network')
 flags.DEFINE_integer('width', 32, 'width of generated network')
 flags.DEFINE_integer('samples', 10000, 'number of samples to generate')
+flags.DEFINE_integer('eval_batches', 16,
+                     'number of batches for generalization eval')
 flags.DEFINE_integer('steps', 100, 'number of gradient stepts to take')
 flags.DEFINE_integer('batch_size', 1024, 'maximum batch size for processing')
 flags.DEFINE_float('learning_rate', 0.01, 'learning rate')
@@ -85,11 +87,13 @@ def _main(_):
     train_losses = []
     test_losses = []
     steps = []
-    # params = []
+    params = []
     for step in range(1, 1 + maxsteps):
         optimizer.zero_grad()
+        should_evaluate = step == 1 or step == maxsteps or step % evaluate_every == 0
 
-        # params.append(_toflat(mlp_learned))
+        if should_evaluate:
+            params.append(toflat(mlp_learned))
 
         loss = 0
         for i in range(0, ns, batch_size):
@@ -116,17 +120,17 @@ def _main(_):
                 p.grad.data *= maxnorm / gradnorm
         optimizer.step()
 
-        if step == 1 or step == maxsteps or step % evaluate_every == 0:
+        if should_evaluate:
             with torch.no_grad():
                 test_loss = 0
-                for i in range(0, ns, batch_size):
-                    low, high = i, min(ns, i + batch_size)
-                    input_batch = torch.randn((ns, input_size), device=device)
+                for _ in range(flags.FLAGS.eval_batches):
+                    input_batch = torch.randn(
+                        (batch_size, input_size), device=device)
                     expected = mlp_true(input_batch)
                     predicted = mlp_learned(input_batch)
                     batch_loss = lossfn(
                         predicted, expected, size_average=False).squeeze()
-                    scaling_factor = (high - low) / ns
+                    scaling_factor = 1 / flags.FLAGS.eval_batches
                     test_loss += batch_loss.cpu().detach().numpy(
                     ) * scaling_factor
             fmt = '{:' + str(len(str(maxsteps))) + 'd}'

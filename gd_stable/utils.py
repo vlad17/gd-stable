@@ -103,7 +103,8 @@ def timeit(name, preprint=True):
 def toflat(model):
     """convert a pytorch module to its flattened parameter vector
     (put onto CPU)"""
-    return torch.cat(tuple(p.data.cpu() for p in model.parameters()))
+    return torch.cat(
+        tuple(p.data.view(-1).cpu().detach() for p in model.parameters()))
 
 
 def fromflat(model, flat):
