@@ -2,6 +2,9 @@
 Various utility functions used across several files.
 """
 
+from contextlib import contextmanager
+import sys
+import time
 import os
 import collections
 import hashlib
@@ -81,3 +84,17 @@ def import_matplotlib():
     matplotlib.use('Agg')
     import matplotlib.pyplot as plt
     return plt
+
+
+@contextmanager
+def timeit(name, preprint=True):
+    """Enclose a with-block with to debug-print out block runtime"""
+    t = time.time()
+    if preprint:
+        print(name, end='')
+        sys.stdout.flush()
+    yield
+    t = time.time() - t
+    if not preprint:
+        print(name, end='')
+    print(' took {:0.1f} seconds'.format(t))
