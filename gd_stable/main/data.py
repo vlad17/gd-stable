@@ -7,7 +7,7 @@ For example,
 
 will read in the network in ./data/mlp-5-32.pth and generate 10000
 input-output pairs according to the network's current weights, writing
-them out to ./data/data-5-32-10000.pth (which then gets 'inputs' and 'outputs'
+them out to ./data/data-5-32.pth (which then gets 'inputs' and 'outputs'
 tensors).
 
 We fix input sizes to 64 and output sizes to be 1.
@@ -60,9 +60,12 @@ def _main(_):
         batch = inputs[low:high].to(device)
         outputs[low:high] = mlp(batch)
 
-    datafile = './data/data-{}-{}-{}.pth'.format(flags.FLAGS.depth,
-                                                 flags.FLAGS.width, ns)
-    torch.save({'inputs': inputs, 'outputs': outputs}, datafile)
+    datafile = './data/data-{}-{}.pth'.format(flags.FLAGS.depth, flags.FLAGS.width)
+
+    torch.save({
+        'inputs': inputs,
+        'outputs': outputs
+    }, datafile)
 
 
 if __name__ == '__main__':
