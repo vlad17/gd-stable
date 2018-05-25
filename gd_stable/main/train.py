@@ -35,6 +35,7 @@ flags.DEFINE_integer('samples', 10000, 'number of samples to generate')
 flags.DEFINE_integer('steps', 100, 'number of gradient stepts to take')
 flags.DEFINE_integer('batch_size', 1024, 'maximum batch size for processing')
 flags.DEFINE_float('learning_rate', 0.01, 'learning rate')
+flags.DEFINE_float('grad_norm_clip', 0, 'if >0, clip gradient to this norm')
 
 
 def _main(_):
@@ -80,7 +81,7 @@ def _main(_):
     lossfn = F.mse_loss
     evaluate_every = max(flags.FLAGS.steps // 100, 1)
     maxsteps = flags.FLAGS.steps
-    maxnorm = 1  # np.sqrt(num_parameters)
+    maxnorm = flags.FLAGS.grad_norm_clip
     train_losses = []
     test_losses = []
     steps = []
@@ -110,9 +111,9 @@ def _main(_):
             gradnorm = torch.norm(grad)
 
         # limit norm, unfortunately looks essential...
-        if gradnorm > maxnorm:
+        if maxnorm > 0 and gradnorm > maxnorm:
             for p in mlp_learned.parameters():
-                p.grad.data /= gradnorm
+                p.grad.data *= maxnorm / gradnorm
         optimizer.step()
 
         if step == 1 or step == maxsteps or step % evaluate_every == 0:
