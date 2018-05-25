@@ -37,7 +37,9 @@ main() {
     trap note_failure EXIT
 
     cmds=()
-    cmds+=("echo hello world")
+    cmds+=("rm -rf ./data/mlp-1-113.pth")
+    cmds+=("python gd_stable/main/generate_network.py --depth 1 --width 113")
+    cmds+=("test -f ./data/mlp-1-113.pth")
 
 
     for cmd in "${cmds[@]}"; do
