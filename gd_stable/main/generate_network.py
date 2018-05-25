@@ -18,7 +18,7 @@ import numpy as np
 import torch
 
 from gd_stable.mlp import MLP
-from gd_stable.utils import seed_all
+from gd_stable.utils import seed_all, num_parameters, fromflat
 
 flags.DEFINE_integer('depth', 5, 'depth of generated network')
 flags.DEFINE_integer('width', 32, 'width of generated network')
@@ -34,19 +34,12 @@ def _main(_):
         map(str, [input_size] + hiddens + [output_size]))))
     mlp = MLP(input_size, hiddens, output_size)
 
-    param_counts = [p.numel() for p in mlp.parameters()]
-    num_parameters = sum(param_counts)
-    print('num parameters', num_parameters)
+    n = num_parameters(mlp)
+    print('num parameters', n)
 
-    new_params = np.random.randn(num_parameters)
+    new_params = np.random.randn(n)
     new_params /= np.linalg.norm(new_params)
-
-    idx_ends = list(np.cumsum(param_counts))
-    idx_begins = [0] + idx_ends[:-1]
-    for begin, end, p in zip(idx_begins, idx_ends, mlp.parameters()):
-        p.data[:] = torch.from_numpy(new_params[begin:end].reshape(
-            p.data.shape))
-
+    fromflat(mlp, torch.from_numpy(new_params))
     torch.save(
         mlp.state_dict(), './data/mlp-{}-{}.pth'.format(
             flags.FLAGS.depth, flags.FLAGS.width))

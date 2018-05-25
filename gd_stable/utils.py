@@ -98,3 +98,24 @@ def timeit(name, preprint=True):
     if not preprint:
         print(name, end='')
     print(' took {:0.1f} seconds'.format(t))
+
+
+def toflat(model):
+    """convert a pytorch module to its flattened parameter vector
+    (put onto CPU)"""
+    return torch.cat(tuple(p.data.cpu() for p in model.parameters()))
+
+
+def fromflat(model, flat):
+    """set the pytorch module to the parameters determined by the given
+    flattened value"""
+    param_counts = [p.numel() for p in model.parameters()]
+    idx_ends = list(np.cumsum(param_counts))
+    idx_begins = [0] + idx_ends[:-1]
+    for begin, end, p in zip(idx_begins, idx_ends, model.parameters()):
+        p.data[:] = flat[begin:end].view(*p.data.shape)
+
+
+def num_parameters(model):
+    """number of parameters in pytorch model"""
+    return sum(p.numel() for p in model.parameters())

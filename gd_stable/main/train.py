@@ -27,7 +27,7 @@ from torch.nn import functional as F
 import numpy as np
 
 from gd_stable.mlp import MLP
-from gd_stable.utils import seed_all, timeit, import_matplotlib
+from gd_stable.utils import seed_all, timeit, import_matplotlib, num_parameters, fromflat, toflat
 
 flags.DEFINE_integer('depth', 5, 'depth of generated network')
 flags.DEFINE_integer('width', 32, 'width of generated network')
@@ -58,10 +58,7 @@ def _main(_):
         device = torch.device('cpu')
         print('not using GPU')
     mlp_true = mlp_true.to(device)
-
-    param_counts = [p.numel() for p in mlp_true.parameters()]
-    num_parameters = sum(param_counts)
-    print('num parameters', num_parameters)
+    print('num parameters', num_parameters(mlp_true))
 
     batch_size = 1024
     ns = flags.FLAGS.samples
@@ -87,8 +84,11 @@ def _main(_):
     train_losses = []
     test_losses = []
     steps = []
+    # params = []
     for step in range(1, 1 + maxsteps):
         optimizer.zero_grad()
+
+        # params.append(_toflat(mlp_learned))
 
         loss = 0
         for i in range(0, ns, batch_size):
