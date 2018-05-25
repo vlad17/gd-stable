@@ -25,3 +25,12 @@ All scripts are available in `scripts/`, and should be run from the repo root in
 ## Example
 
 All mainfiles are documented. Run `python gd_stable/main/*.py --help` for any `*` for details.
+
+```
+# generate the true test net
+python gd_stable/main/generate_network.py --depth 5 --width 32
+# train a new net on a sampled dataset (needs grad norm clipping)
+python gd_stable/main/train.py --depth 5 --width 32 --learning_rate 0.001
+# view corresponding result
+xdg-open ./data/plot-5-32.pdf
+```
