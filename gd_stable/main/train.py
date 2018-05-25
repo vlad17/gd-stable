@@ -79,10 +79,14 @@ def _main(_):
     optimizer = optim.SGD(
         mlp_learned.parameters(), lr=flags.FLAGS.learning_rate)
 
+    # smooth_l1_loss (huber) doesn't fix the gradient issue, still...
+    lossfn = F.mse_loss
     evaluate_every = max(flags.FLAGS.steps // 100, 1)
     maxsteps = flags.FLAGS.steps
     maxnorm = 1  # np.sqrt(num_parameters)
-    losses = []
+    train_losses = []
+    test_losses = []
+    steps = []
     for step in range(1, 1 + maxsteps):
         optimizer.zero_grad()
 
@@ -93,14 +97,12 @@ def _main(_):
                 input_batch = inputs[low:high].to(device)
                 expected = outputs[low:high].to(device)
             predicted = mlp_learned(input_batch)
-            # smooth_l1_loss (huber) doesn't fix the gradient issue, still...
-            batch_loss = F.mse_loss(
+            batch_loss = lossfn(
                 predicted, expected, size_average=False).squeeze()
             scaling_factor = (high - low) / ns
             batch_loss.backward(torch.ones(()).to(device) * scaling_factor)
             with torch.no_grad():
                 loss += batch_loss.cpu().detach().numpy() * scaling_factor
-        losses.append(loss)
 
         with torch.no_grad():
             grad = torch.cat(
@@ -111,22 +113,36 @@ def _main(_):
         if gradnorm > maxnorm:
             for p in mlp_learned.parameters():
                 p.grad.data /= gradnorm
-            gradnorm = maxnorm
-
         optimizer.step()
 
         if step == 1 or step == maxsteps or step % evaluate_every == 0:
+            with torch.no_grad():
+                test_loss = 0
+                for i in range(0, ns, batch_size):
+                    low, high = i, min(ns, i + batch_size)
+                    input_batch = torch.randn((ns, input_size), device=device)
+                    expected = mlp_true(input_batch)
+                    predicted = mlp_learned(input_batch)
+                    batch_loss = lossfn(
+                        predicted, expected, size_average=False).squeeze()
+                    scaling_factor = (high - low) / ns
+                    test_loss += batch_loss.cpu().detach().numpy(
+                    ) * scaling_factor
             fmt = '{:' + str(len(str(maxsteps))) + 'd}'
             update = ('step ' + fmt + ' of ' + fmt).format(step, maxsteps)
             update += ' train loss {:8.4g}'.format(loss)
-            update += ' grad norm {:8.4g}'.format(gradnorm)
-            # todo generalization error from batch sample
+            update += ' grad norm (unclipped) {:8.4g}'.format(gradnorm)
+            update += ' test loss {:8.4g}'.format(test_loss)
             print(update)
+            steps.append(step)
+            train_losses.append(loss)
+            test_losses.append(test_loss)
 
     plt = import_matplotlib()
-    steps = np.arange(1, 1 + maxsteps, 1.)
     plt.clf()
-    plt.plot(steps, losses)
+    plt.semilogy(steps, train_losses, label='train')
+    plt.semilogy(steps, test_losses, label='test', ls='--')
+    plt.legend()
     plt.xlabel('iterations')
     plt.ylabel('loss')
     plt.title('gd with norm clipping (depth {} width {})'.format(
