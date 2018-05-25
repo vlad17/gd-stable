@@ -1,4 +1,4 @@
-# Stability of GD in NNs [![Build Status](https://travis-ci.com/vlad17/lbs.svg?token=xAqzxKFpxN3pG4om3z4n&branch=master)](https://travis-ci.com/vlad17/gd-stable)
+# Stability of GD in NNs [![Build Status](https://travis-ci.com/vlad17/gd-stable.svg?token=xAqzxKFpxN3pG4om3z4n&branch=master)](https://travis-ci.com/vlad17/gd-stable)
 
 ## Setup
 
