@@ -22,7 +22,7 @@ def _next_seeds(n):
     mt_state_size = 624
     seeds = []
     for _ in range(n):
-        state = np.random.randint(2**32, size=mt_state_size)
+        state = np.random.randint(2**31, size=mt_state_size)
         digest = hashlib.sha224(state.tobytes()).digest()
         seed = np.frombuffer(digest, dtype=np.uint32)[0]
         seeds.append(int(seed))
@@ -35,7 +35,7 @@ def seed_all(seed):
     """Seed all devices deterministically off of seed and somewhat
     independently."""
     print('seeding with seed {}'.format(seed))
-    np.random.randint(seed)
+    np.random.seed(seed)
     rand_seed, torch_cpu_seed, torch_gpu_seed = _next_seeds(3)
     random.seed(rand_seed)
     torch.manual_seed(torch_cpu_seed)

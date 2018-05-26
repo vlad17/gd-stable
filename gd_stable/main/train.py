@@ -63,6 +63,8 @@ def _main(_):
     mlp_true = mlp_true.to(device)
     print('num parameters', num_parameters(mlp_true))
 
+    # make sure that this is the first random operation in torch so the dataset
+    # is always generated deterministically
     batch_size = 1024
     ns = flags.FLAGS.samples
     with timeit('generating {} samples'.format(ns)):
