@@ -9,9 +9,7 @@ For example,
 
 will read in the network in ./data/mlp-5-32.pth and generate 10000
 input-output pairs according to the network's current weights.
-
-* We fix input sizes to 64 and output sizes to be 1.
-* Samples generated are standard normal distributed.
+Samples generated are standard normal distributed.
 
 Then a new network is trained with 100 full gradient descent steps.
 
@@ -84,6 +82,10 @@ def _main(_):
     mlp_learned = mlp_learned.to(device)
     optimizer = optim.SGD(
         mlp_learned.parameters(), lr=flags.FLAGS.learning_rate)
+    print('generated learning MLP {}'.format(
+        ' -> '.join(
+            map(str, [input_size] + hiddens + [output_size]))))
+
 
     # smooth_l1_loss (huber) doesn't fix the gradient issue, still...
     lossfn = F.mse_loss
@@ -96,10 +98,6 @@ def _main(_):
     params = []
     for step in range(1, 1 + maxsteps):
         optimizer.zero_grad()
-        should_evaluate = step == 1 or step == maxsteps or step % evaluate_every == 0
-
-        if should_evaluate:
-            params.append(toflat(mlp_learned))
 
         loss = 0
         for i in range(0, ns, batch_size):
@@ -120,13 +118,7 @@ def _main(_):
                 tuple(p.grad.data.view(-1) for p in mlp_learned.parameters()))
             gradnorm = torch.norm(grad)
 
-        # limit norm, unfortunately looks essential...
-        if maxnorm > 0 and gradnorm > maxnorm:
-            for p in mlp_learned.parameters():
-                p.grad.data *= maxnorm / gradnorm
-        optimizer.step()
-
-        if should_evaluate:
+        if step == 1 or step == maxsteps or step % evaluate_every == 0:
             with torch.no_grad():
                 test_loss = 0
                 for _ in range(flags.FLAGS.eval_batches):
@@ -148,10 +140,18 @@ def _main(_):
             steps.append(step)
             train_losses.append(loss)
             test_losses.append(test_loss)
+            params.append(toflat(mlp_learned))
+
+        # step after debug info printed so each param vector corresponds
+        # to its own grad norm and losses
+        # limit norm, unfortunately looks essential...
+        if maxnorm > 0 and gradnorm > maxnorm:
+            for p in mlp_learned.parameters():
+                p.grad.data *= maxnorm / gradnorm
+        optimizer.step()
+
 
     # TODO:
-    # (2) generate_network.py should allow for inits that are just the usual
-    # xavier perhaps? Maybe make the biases random normal.
     # (3) instead of doing viz in this file after training directly,
     # save the flat param vectors, steps, and losses in a torch state_dict.
     # Then a separate main file should let you plot n curves (from multiple

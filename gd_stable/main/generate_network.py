@@ -8,7 +8,7 @@ For example,
 will generate a 5-by-32 MLP (with parameters on the unit ball) and write
 it out to ./data/mlp-5-32.pth (overwriting existing files).
 
-We fix input sizes to 64 and output sizes to be 1.
+We fix input sizes and output sizes.
 
 """
 
