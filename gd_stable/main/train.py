@@ -27,11 +27,15 @@ from torch.nn import functional as F
 import numpy as np
 
 from gd_stable.mlp import MLP
-from gd_stable.utils import seed_all, timeit, import_matplotlib, num_parameters, fromflat, toflat
+from gd_stable.utils import (seed_all, timeit, import_matplotlib,
+                             num_parameters, fromflat, toflat)
 
 flags.DEFINE_integer('depth', 5, 'depth of generated network')
 flags.DEFINE_integer('width', 32, 'width of generated network')
-flags.DEFINE_integer('samples', 10000, 'number of samples to generate')
+flags.DEFINE_string(
+    'true_network', None, 'the true network that determines the '
+    'correct output values in the regression')
+flags.DEFINE_integer('samples', 1024, 'number of samples to generate')
 flags.DEFINE_integer('eval_batches', 16,
                      'number of batches for generalization eval')
 flags.DEFINE_integer('steps', 100, 'number of gradient stepts to take')
@@ -43,16 +47,15 @@ flags.DEFINE_float('grad_norm_clip', 0, 'if >0, clip gradient to this norm')
 def _main(_):
     seed_all(1)
 
-    input_size = 64
-    hiddens = [flags.FLAGS.width] * flags.FLAGS.depth
-    output_size = 1
-    mlp_true = MLP(input_size, hiddens, output_size)
-    savefile = './data/mlp-{}-{}.pth'.format(flags.FLAGS.depth,
-                                             flags.FLAGS.width)
-    mlp_true.load_state_dict(torch.load(savefile))
+    state_dict = torch.load(flags.FLAGS.true_network)
+    input_size = state_dict['input_size']
+    output_size = state_dict['output_size']
+    mlp_true = MLP(input_size, state_dict['hiddens'], output_size)
+    mlp_true.load_state_dict(state_dict['network'])
     print('loaded MLP {} from {}'.format(
-        ' -> '.join(map(str, [input_size] + hiddens + [output_size])),
-        savefile))
+        ' -> '.join(
+            map(str, [input_size] + state_dict['hiddens'] + [output_size])),
+        flags.FLAGS.true_network))
 
     if torch.cuda.is_available():
         device = torch.device('cuda')
@@ -65,7 +68,7 @@ def _main(_):
 
     # make sure that this is the first random operation in torch so the dataset
     # is always generated deterministically
-    batch_size = 1024
+    batch_size = flags.FLAGS.batch_size
     ns = flags.FLAGS.samples
     with timeit('generating {} samples'.format(ns)):
         inputs = torch.randn((ns, input_size))
@@ -76,6 +79,7 @@ def _main(_):
             batch = inputs[low:high].to(device)
             outputs[low:high] = mlp_true(batch)
 
+    hiddens = [flags.FLAGS.width] * flags.FLAGS.depth
     mlp_learned = MLP(input_size, hiddens, output_size)
     mlp_learned = mlp_learned.to(device)
     optimizer = optim.SGD(
@@ -146,9 +150,6 @@ def _main(_):
             test_losses.append(test_loss)
 
     # TODO:
-    # (1) don't require the the model depth/width match, allow arbitrary
-    # input file from torch (the correpsonding state_dict needs to specify
-    # MLP input / hidden / output sizes, though)
     # (2) generate_network.py should allow for inits that are just the usual
     # xavier perhaps? Maybe make the biases random normal.
     # (3) instead of doing viz in this file after training directly,
@@ -159,7 +160,7 @@ def _main(_):
     # and plot the 2D (or 1D) parameteric plot of the top principle component
     # of the flat param vector iterates' differences, when combined across
     # the two datasets, i.e., for two runs A, B on the same loss, let their
-    # iterates be a0, a1, ... and b0, b1, .... Then do PCA on
+    # iterates be a0, a1, ... and b0, b1, .... Then do PAC on
     # (a1 - a0, a2 - a1, ... an - a(n-1), b1 - b0, b2 - b1, ...)
     # and plot the two loss curves as well as the loss landscape.
 
@@ -177,4 +178,5 @@ def _main(_):
 
 
 if __name__ == '__main__':
+    flags.mark_flag_as_required('true_network')
     app.run(_main)

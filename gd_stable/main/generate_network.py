@@ -40,9 +40,15 @@ def _main(_):
     new_params = np.random.randn(n)
     new_params /= np.linalg.norm(new_params)
     fromflat(mlp, torch.from_numpy(new_params))
+    state_dict = {
+        'input_size': input_size,
+        'hiddens': hiddens,
+        'output_size': output_size,
+        'network': mlp.state_dict(),
+    }
     torch.save(
-        mlp.state_dict(), './data/mlp-{}-{}.pth'.format(
-            flags.FLAGS.depth, flags.FLAGS.width))
+        state_dict, './data/mlp-{}-{}.pth'.format(flags.FLAGS.depth,
+                                                  flags.FLAGS.width))
 
 
 if __name__ == '__main__':
