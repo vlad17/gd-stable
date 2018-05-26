@@ -5,16 +5,16 @@ and then try to train a corresponding network with gradient descent.
 For example,
 
     python gd_stable/main/data.py --depth 5 --width 32 \
-        --samples 10000 --steps 100
+        --samples 10000 --steps 100 --true_network ./data/mlp-6-18.pth
 
-will read in the network in ./data/mlp-5-32.pth and generate 10000
+will read in the network in ./data/mlp-6-18.pth and generate 10000
 input-output pairs according to the network's current weights.
 Samples generated are standard normal distributed.
+Then a new network is trained with full gradient descent steps.
 
-Then a new network is trained with 100 full gradient descent steps.
-
-Prints a loss curve in ./data/plot-5-32.pdf
-
+A full trace of the computation with the intermediate iterates (at a resolution
+of about 100 evenly-placed steps) is saved to
+./data/iterates-<depth>-<width>-<samples>.pth
 """
 
 from absl import app
@@ -25,8 +25,8 @@ from torch.nn import functional as F
 import numpy as np
 
 from gd_stable.mlp import MLP
-from gd_stable.utils import (seed_all, timeit, import_matplotlib,
-                             num_parameters, fromflat, toflat)
+from gd_stable.utils import (seed_all, timeit, num_parameters, fromflat,
+                             toflat)
 
 flags.DEFINE_integer('depth', 5, 'depth of generated network')
 flags.DEFINE_integer('width', 32, 'width of generated network')
@@ -162,17 +162,19 @@ def _main(_):
     # (a1 - a0, a2 - a1, ... an - a(n-1), b1 - b0, b2 - b1, ...)
     # and plot the two loss curves as well as the loss landscape.
 
-    plt = import_matplotlib()
-    plt.clf()
-    plt.semilogy(steps, train_losses, label='train')
-    plt.semilogy(steps, test_losses, label='test', ls='--')
-    plt.legend()
-    plt.xlabel('iterations')
-    plt.ylabel('loss')
-    plt.title('gd with norm clipping (depth {} width {})'.format(
-        flags.FLAGS.depth, flags.FLAGS.width))
-    plt.savefig('./data/plot-{}-{}.pdf'.format(flags.FLAGS.depth,
-                                               flags.FLAGS.width))
+    savefile = './data/iterates-{}-{}-{}.pth'.format(flags.FLAGS.depth,
+                                                     flags.FLAGS.width, ns)
+    with timeit('saving iterates to {}'.format(savefile)):
+        torch.save({
+            'steps': steps,
+            'train_losses': train_losses,
+            'test_losses': test_losses,
+            'iterates': params,
+            'input_size': input_size,
+            'hiddens': hiddens,
+            'output_size': output_size,
+            'samples': ns
+        }, savefile)
 
 
 if __name__ == '__main__':

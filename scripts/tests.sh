@@ -40,8 +40,9 @@ main() {
     cmds+=("rm -rf ./data/mlp-1-113.pth")
     cmds+=("python gd_stable/main/generate_network.py --depth 1 --width 113")
     cmds+=("test -f ./data/mlp-1-113.pth")
-    cmds+=("rm -rf ./data/plot-1-113.pdf")
     cmds+=("python gd_stable/main/train.py --depth 1 --width 113 --samples 1000 --grad_norm_clip 1 --true_network ./data/mlp-1-113.pth")
+    cmds+=("rm -rf ./data/plot-1-113.pdf")
+    cmds+=("python gd_stable/main/loss_curves.py -f ./data/iterates-1-113-1000.pth --outfile ./data/plot-1-113.pdf")
     cmds+=("test -f ./data/plot-1-113.pdf")
 
     for cmd in "${cmds[@]}"; do

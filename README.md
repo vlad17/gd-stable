@@ -34,6 +34,8 @@ WIDTH=32
 python gd_stable/main/generate_network.py --depth ${DEPTH} --width ${WIDTH}
 # train a new net on a sampled dataset (usually needs grad norm clipping)
 python gd_stable/main/train.py --depth ${DEPTH} --width ${WIDTH} --learning_rate 0.01 --grad_norm_clip 1 --samples 256 --steps 10000 --true_network ./data/mlp-${DEPTH}-${WIDTH}.pth
+python gd_stable/main/train.py --depth ${DEPTH} --width ${WIDTH} --learning_rate 0.01 --grad_norm_clip 1 --samples 512 --steps 10000 --true_network ./data/mlp-${DEPTH}-${WIDTH}.pth
 # view corresponding result
-xdg-open ./data/plot-${DEPTH}-${WIDTH}.pdf
+python gd_stable/main/loss_curves.py -f ./data/iterates-${DEPTH}-${WIDTH}-256.pth -f ./data/iterates-${DEPTH}-${WIDTH}-512.pth
+xdg-open ./data/out.pdf
 ```
