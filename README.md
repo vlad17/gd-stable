@@ -32,7 +32,7 @@ WIDTH=32
 # generate the true test net
 python gd_stable/main/generate_network.py --depth ${DEPTH} --width ${WIDTH}
 # train a new net on a sampled dataset (usually needs grad norm clipping)
-python gd_stable/main/train.py --depth ${DEPTH} --width ${WIDTH} --learning_rate 0.01 --grad_norm_clip 1 --samples 1024
+python gd_stable/main/train.py --depth ${DEPTH} --width ${WIDTH} --learning_rate 0.01 --grad_norm_clip 1 --samples 1024 --steps 1000
 # view corresponding result
 xdg-open ./data/plot-${DEPTH}-${WIDTH}.pdf
 ```

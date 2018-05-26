@@ -143,6 +143,24 @@ def _main(_):
             train_losses.append(loss)
             test_losses.append(test_loss)
 
+    # TODO:
+    # (1) don't require the the model depth/width match, allow arbitrary
+    # input file from torch (the correpsonding state_dict needs to specify
+    # MLP input / hidden / output sizes, though)
+    # (2) generate_network.py should allow for inits that are just the usual
+    # xavier perhaps? Maybe make the biases random normal.
+    # (3) instead of doing viz in this file after training directly,
+    # save the flat param vectors, steps, and losses in a torch state_dict.
+    # Then a separate main file should let you plot n curves (from multiple
+    # such state_dicts) side by side. Next, yet another separate main file
+    # should accept two such state dicts containing the training traces,
+    # and plot the 2D (or 1D) parameteric plot of the top principle component
+    # of the flat param vector iterates' differences, when combined across
+    # the two datasets, i.e., for two runs A, B on the same loss, let their
+    # iterates be a0, a1, ... and b0, b1, .... Then do PCA on
+    # (a1 - a0, a2 - a1, ... an - a(n-1), b1 - b0, b2 - b1, ...)
+    # and plot the two loss curves as well as the loss landscape.
+
     plt = import_matplotlib()
     plt.clf()
     plt.semilogy(steps, train_losses, label='train')
