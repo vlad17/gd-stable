@@ -8,7 +8,7 @@ For example,
 will generate a 5-by-32 MLP (with parameters on the unit ball) and write
 it out to ./data/mlp-5-32.pth (overwriting existing files).
 
-We fix input sizes and output sizes.
+We fix input sizes and output sizes (output size is just the width).
 
 """
 
@@ -25,11 +25,11 @@ flags.DEFINE_integer('width', 32, 'width of generated network')
 
 
 def _main(_):
-    seed_all(1)
+    seed_all(1234)
 
     input_size = 64
     hiddens = [flags.FLAGS.width] * flags.FLAGS.depth
-    output_size = 1
+    output_size = flags.FLAGS.width
     print('generating MLP {}'.format(' -> '.join(
         map(str, [input_size] + hiddens + [output_size]))))
     mlp = MLP(input_size, hiddens, output_size)
@@ -38,7 +38,10 @@ def _main(_):
     print('num parameters', n)
 
     new_params = np.random.randn(n)
-    new_params /= np.linalg.norm(new_params)
+    # new_params has l2 norm of order sqrt(n)
+    # but that results in output values that are way too large
+    # square-rooting the norm seems to give interesting behavior
+    new_params /= np.sqrt(np.linalg.norm(new_params))
     fromflat(mlp, torch.from_numpy(new_params))
     state_dict = {
         'input_size': input_size,

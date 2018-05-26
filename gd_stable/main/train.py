@@ -76,16 +76,15 @@ def _main(_):
             high = min(ns, i + batch_size)
             batch = inputs[low:high].to(device)
             outputs[low:high] = mlp_true(batch)
+    print('average size', outputs.cpu().detach().abs().mean().numpy())
 
     hiddens = [flags.FLAGS.width] * flags.FLAGS.depth
     mlp_learned = MLP(input_size, hiddens, output_size)
     mlp_learned = mlp_learned.to(device)
     optimizer = optim.SGD(
         mlp_learned.parameters(), lr=flags.FLAGS.learning_rate)
-    print('generated learning MLP {}'.format(
-        ' -> '.join(
-            map(str, [input_size] + hiddens + [output_size]))))
-
+    print('generated learning MLP {}'.format(' -> '.join(
+        map(str, [input_size] + hiddens + [output_size]))))
 
     # smooth_l1_loss (huber) doesn't fix the gradient issue, still...
     lossfn = F.mse_loss
@@ -133,9 +132,9 @@ def _main(_):
                     ) * scaling_factor
             fmt = '{:' + str(len(str(maxsteps))) + 'd}'
             update = ('step ' + fmt + ' of ' + fmt).format(step, maxsteps)
-            update += ' train loss {:8.4g}'.format(loss)
-            update += ' grad norm (unclipped) {:8.4g}'.format(gradnorm)
-            update += ' test loss {:8.4g}'.format(test_loss)
+            update += ' train loss {:9.4g}'.format(loss)
+            update += ' grad norm (unclipped) {:9.4g}'.format(gradnorm)
+            update += ' test loss {:9.4g}'.format(test_loss)
             print(update)
             steps.append(step)
             train_losses.append(loss)
@@ -149,7 +148,6 @@ def _main(_):
             for p in mlp_learned.parameters():
                 p.grad.data *= maxnorm / gradnorm
         optimizer.step()
-
 
     # TODO:
     # (3) instead of doing viz in this file after training directly,
