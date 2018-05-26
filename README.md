@@ -5,7 +5,8 @@
 See `setup.py` for necessary python packages. Requires a linux x64 box.
 
 ```
-conda create -y -n gd-stable-env python=3.5
+# MKL on RISE machines messes things up for some reason
+conda create -y -n gd-stable-env python=3.5 numpy nomkl
 source activate gd-stable-env
 ./scripts/install-pytorch.sh
 pip install --no-cache-dir --editable .
